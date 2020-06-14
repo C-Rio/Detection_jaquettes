@@ -219,7 +219,7 @@ def draw_contour(args_image):
 
                 # On ne conserve que les intersections qui se situent dans l'image
                 if x_int >= 0 and y_int >= 0 and x_int <= img_dim[1] and y_int <= img_dim[0]:
-                    cv2.circle(image, (int(x_int), int(y_int)), 5, (255, 255, 255), 3)
+                    # cv2.circle(image, (int(x_int), int(y_int)), 5, (255, 255, 255), 3)
                     intersections = np.vstack((intersections, np.array([int(x_int), int(y_int)])))
 
     if intersections.shape[0] != 4:
