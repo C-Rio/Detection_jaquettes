@@ -14,8 +14,9 @@ let
     python-packages.numpy
     python-packages.unidecode
     python-packages.python-Levenshtein
+    python-packages.langdetect
     # python-packages.pytesseract
-    # python-packages.opencv4
+    python-packages.opencv4
 
   ];
   my-python = python38.withPackages my-python-packages;
@@ -28,7 +29,7 @@ in
       bashInteractive
       my-python
       my_pytesseract
-      my_opencv
+      # my_opencv
       my-tesseract
     ];
     shellHook = ''
