@@ -9,7 +9,7 @@ from langdetect import detect
 
 # img = maintain_aspect_ratio_resize(img, 500, inter=cv2.INTER_CUBIC)
 
-res = draw_contour("./Images/MTG/card.jpg")
+res = draw_contour("./Images/MTG/card2.jpg")
 
 # Convert the image to gray scale
 gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
@@ -37,7 +37,7 @@ try:
         rows = cursor.execute("select name, originalText,flavorText, uuid from cards")
     else:
         lang = "French"
-        rows = cursor.execute("select name, text, uuid from foreign_data where language=:lang", {"lang": lang})
+        rows = cursor.execute("select name, text, flavorText, uuid from foreign_data where language=:lang", {"lang": lang})
 
     for row in rows:
         if row is not None:
