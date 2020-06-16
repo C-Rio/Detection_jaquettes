@@ -1,6 +1,6 @@
 # import required libraries
 import numpy as np
-from cv2 import cv2
+import cv2 as cv2
 import os
 import math as math
 
