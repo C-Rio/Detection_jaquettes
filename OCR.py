@@ -35,7 +35,7 @@ def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER
 
 # img = maintain_aspect_ratio_resize(img, 500, inter=cv2.INTER_CUBIC)
 
-res = draw_contour("./Images/MTG/card3.jpg")
+res = draw_contour("./Images/MTG/card2.jpg")
 
 # Convert the image to gray scale
 gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
@@ -55,7 +55,7 @@ blur = cv2.GaussianBlur(th3, (5, 5), 0)
 # cv2.waitKey(0)
 
 
-custom_config = r'-l fra --psm 12 -c tessedit_char_blacklist=<>#!{}‘\\\|'
+custom_config = r'-l fra+eng --psm 12 -c tessedit_char_blacklist=<>#!{}‘\\\|'
 text = (pytesseract.image_to_string(blur, config=custom_config))
 final_text = [line for line in text.splitlines() if len(line) > 2 and not line.isupper()]
 final_text = ' '.join(final_text)
@@ -67,17 +67,43 @@ try:
     cursor = sqliteConnection.cursor()
     print("Successfully Connected to SQLite DataBase")
 
-    sqlite_select_Query = "select originalText from cards"
+    sqlite_select_Query = "select name, originalText,flavorText, uuid from cards"
     rows = cursor.execute(sqlite_select_Query)
     min_dist = 99999999
     min_text = ""
+    min_uuid = None
     for row in rows:
-        if row is not None and row[0] is not None:
-            dist = lev.distance(final_text, row[0])
+        if row is not None:
+            text = ' '.join(x for x in row[:-1] if x is not None)
+            # print(text)
+            dist = lev.distance(final_text, text)
             if dist < min_dist:
                 min_dist = dist
-                min_text = row[0]
+                min_text = text
+                min_uuid = row[-1]
             # print(unidecode(row[0]))
+
+    sqlite_select_Query = "select name, text, uuid from foreign_data"
+    rows = cursor.execute(sqlite_select_Query)
+    for row in rows:
+        if row is not None:
+            text = ' '.join(x for x in row[:-1] if x is not None)
+            # print(text)
+            dist = lev.distance(final_text, text)
+            if dist < min_dist:
+                min_dist = dist
+                min_text = text
+                min_uuid = row[-1]
+            # print(unidecode(row[0]))
+
+    uu = (min_uuid,)
+
+    rows = cursor.execute("select price, type from prices where uuid=?", uu)
+    prices = {}
+    for row in rows:
+        if row is not None:
+            prices[row[1]] = row[0]
+
     cursor.close()
 
 except sqlite3.Error as error:
@@ -89,4 +115,6 @@ finally:
 
 
 print("OCR = ", final_text)
-print("Found =", min_text)
+print("Card found =", min_text)
+print("Card UUID = ", min_uuid)
+print("Card prices = ", prices)
