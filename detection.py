@@ -52,7 +52,7 @@ def equation_droite(x1, y1, x2, y2):
 
 
 def point_intersection(droite1, droite2):
-    if droite1[0] != 'NA' and droite2 != 'NA':
+    if droite1[0] != 'NA' and droite2[0] != 'NA':
         x_int = (droite2[1] - droite1[1]) / (droite1[0] - droite2[0])
         y_int = droite1[0] * x_int + droite1[1]
         return (x_int, y_int)
@@ -75,7 +75,7 @@ def is_line_outside_margin(line, margin, img_dim):
 
 
 def are_lines_parallel(droite1, droite2):
-    if droite1 == droite2 or (droite1 == 'NA' and droite2 == 'NA'):
+    if droite1[0] == droite2[0] or (droite1 == 'NA' and droite2 == 'NA'):
         return True
     else:
         return False

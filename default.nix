@@ -17,6 +17,8 @@ let
     python-packages.langdetect
     # python-packages.pytesseract
     python-packages.opencv4
+    python-packages.pylint
+    python-packages.autopep8
 
   ];
   my-python = python38.withPackages my-python-packages;
