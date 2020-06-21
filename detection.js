@@ -1,4 +1,3 @@
-
 let imgElement = document.getElementById('imageSrc');
 let inputElement = document.getElementById('fileInput');
 inputElement.addEventListener('change', (e) => { imgElement.src = URL.createObjectURL(e.target.files[0]); }, false);
@@ -22,6 +21,9 @@ imgElement.onload = function () {
     let img_h = mat_gray_resized_blur.rows;
     let img_w = mat_gray_resized_blur.cols;
 
+    console.log("img_h", img_h);
+    console.log("img_w", img_w);
+
     let margin_x = Math.floor(img_w * 0.01)
     let margin_y = Math.floor(img_h * 0.01)
 
@@ -38,7 +40,7 @@ imgElement.onload = function () {
 
     let blue = new cv.Scalar(0, 0, 255, 1)
     let lines = new cv.Mat();
-    cv.HoughLinesP(mat_gray_resized_blur_thresh_inv, lines, 1, Math.PI / 180, 250, 50, 20);
+    cv.HoughLinesP(mat_gray_resized_blur_thresh_inv, lines, 1, Math.PI / 180, 230, 50, 20);
     mat_gray_resized_blur_thresh_inv.delete()
 
     // If no lines have been found, display original image
@@ -49,7 +51,6 @@ imgElement.onload = function () {
 
     let filtered_line = [];
 
-    // draw lines
     for (let i = 0; i < lines.rows; ++i) {
         let startPoint = new cv.Point(lines.data32S[i * 4], lines.data32S[i * 4 + 1]);
         let endPoint = new cv.Point(lines.data32S[i * 4 + 2], lines.data32S[i * 4 + 3]);
@@ -60,35 +61,43 @@ imgElement.onload = function () {
         }
     }
 
-    console.log("filtered line len " + filtered_line.length)
-    console.log("filtered line", filtered_line)
+    // console.log("filtered line len " + filtered_line.length)
+    // console.log("filtered line", filtered_line)
 
     // If almost all lines have been filtered, display original image
     if (filtered_line.length < 8) {
+        console.log("Filtered line < 8")
         cv.imshow('canvasOutput', mat);
         return null;
     }
 
-    // For example: let mat = cv.matFromArray(2, 2, cv.CV_8UC1, [1, 2, 3, 4]);
     let mat2 = cv.matFromArray(filtered_line.length / 2, 2, cv.CV_32S, filtered_line);
-    // console.log(mat2.data32S)
-
-    var contours = new cv.MatVector();
-    contours.push_back(mat2)
-
-
     var hull = new cv.Mat();
-    var cnt = contours.get(0);
-    cv.convexHull(cnt, hull, false, true);
+    cv.convexHull(mat2, hull, false, true);
 
-    // console.log(hull.data32S)
 
+    // let rect = cv.boundingRect(hull);
+
+    // let final_image = new cv.Mat();
+    // let rect2 = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
+    // final_image = mat.roi(rect2);
+
+    // cv.imshow('canvasOutput', final_image);
+    // return null
+
+
+
+
+    console.log("hull", hull.data32S)
 
     let rect_contours = simplify_contour(hull)
 
-    // cv.drawContours(mat, hulls, -1, blue, 3);
+    // Uncomment to debug and display draw rect_contours
+    let vect = new cv.MatVector()
+    vect.push_back(rect_contours)
+    cv.drawContours(mat, vect, -1, blue, 3)
     console.log("rect_contours", rect_contours.data32S)
-    console.log("rect_contours len", rect_contours.data32S.length)
+    // console.log("rect_contours len", rect_contours.data32S.length)
 
     lines_len = []
     lines_coords = []
@@ -169,8 +178,8 @@ imgElement.onload = function () {
                     y_int = inter[1]
                 }
                 //  On ne conserve que les intersections qui se situent dans l'image
-                if (inter[0] >= 0 && inter[1] >= 0 && inter[0] <= img_w && inter[1] <= img_h)
-                    intersections.push(Math.floor(inter[0]), Math.floor(inter[1]))
+                if (x_int >= 0 && y_int >= 0 && x_int <= img_w && y_int <= img_h)
+                    intersections.push(Math.floor(x_int), Math.floor(y_int))
             }
         }
     }
@@ -178,73 +187,117 @@ imgElement.onload = function () {
     console.log("intersections", intersections);
 
     if (intersections.length != 8) {
+        console.log("Case length != 8")
         let rect = cv.boundingRect(rect_contours);
         let rectangleColor = new cv.Scalar(255, 0, 0);
 
-        let point1 = new cv.Point(rect.x, rect.y);
-        let point2 = new cv.Point(rect.x + rect.width, rect.y + rect.height)
+        let final_image = new cv.Mat();
+        let rect2 = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
+        final_image = mat.roi(rect2);
 
-        cv.rectangle(mat, point1, point2, rectangleColor, 2,);
-        cv.imshow('canvasOutput', mat);
+        cv.imshow('canvasOutput', final_image);
         return null;
-
-        // return image[y: y + h, x: x + w]
     }
     else {
         let mat3 = cv.matFromArray(intersections.length / 2, 2, cv.CV_32S, intersections);
         console.log(mat3.data32S)
 
-        // var contours2 = new cv.MatVector();
-        // contours2.push_back(mat3)
-
-
         var hull2 = new cv.Mat();
-        // var cnt2 = contours.get(0);
+
         cv.convexHull(mat3, hull2, false, true);
         console.log("hull2", hull2.data32S)
 
-        let point_top = hull2.clone();
+        let vect = new cv.MatVector()
+        vect.push_back(hull2)
+        let red = new cv.Scalar(0.5, 128, 0)
+        cv.drawContours(mat, vect, -1, red, 3)
+
+        let array_hull2 = []
+        for (let i = 0; i < 8; i = i + 2)
+            array_hull2.push([hull2.data32S[i], hull2.data32S[i + 1]])
+
+        console.log("array_hull2", array_hull2)
+
+        array_hull2.sort(function (a, b) {
+            return a[0] - b[0]
+        });
+        console.log("array_hull2 sorted", array_hull2)
+
+        if (array_hull2[0][1] > array_hull2[1][1]) {
+            bottom_left = array_hull2[0]
+            top_left = array_hull2[1]
+        }
+        else {
+            bottom_left = array_hull2[1]
+            top_left = array_hull2[0]
+        }
+
+        if (array_hull2[2][1] > array_hull2[3][1]) {
+            bottom_right = array_hull2[2]
+            top_right = array_hull2[3]
+        }
+        else {
+            bottom_right = array_hull2[3]
+            top_right = array_hull2[2]
+        }
+
+        console.log("bottom_left", bottom_left)
+        console.log("bottom_right", bottom_right)
+        console.log("top_left", top_left)
+        console.log("top_right", top_right)
+
+        eq_left_line = equation_droite(bottom_left[0], bottom_left[1], top_left[0], top_left[1])
+        eq_top_line = equation_droite(top_left[0], top_left[1], top_right[0], top_right[1])
+        eq_right_line = equation_droite(top_right[0], top_right[1], bottom_right[0], bottom_right[1])
+        eq_bottom_line = equation_droite(bottom_left[0], bottom_left[1], bottom_right[0], bottom_right[1])
+
+        angle_top_left = lines_intersection_angle(eq_left_line, eq_top_line)
+        angle_top_right = lines_intersection_angle(eq_top_line, eq_right_line)
+        angle_bottom_right = lines_intersection_angle(eq_right_line, eq_bottom_line)
+        angle_bottom_left = lines_intersection_angle(eq_bottom_line, eq_left_line)
+
+        console.log("angle_top_left", angle_top_left)
+        console.log("angle_top_right", angle_top_right)
+        console.log("angle_bottom_right", angle_bottom_right)
+        console.log("angle_bottom_left", angle_bottom_left)
+
+
+
+        if (Math.abs(angle_top_left - angle_top_right) >= 30 || Math.abs(angle_bottom_right - angle_bottom_left) >= 30) {
+            console.log("case >= 30")
+            let rect = cv.boundingRect(rect_contours);
+            let rectangleColor = new cv.Scalar(255, 0, 0);
+
+            let rect2 = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
+            // final_image = mat
+            final_image = mat.roi(rect2);
+        }
+        else {
+            let rect = cv.boundingRect(hull2);
+            let rectangleColor = new cv.Scalar(255, 0, 0);
+
+            let rect2 = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
+            console.log("Normal condition")
+            //  [bottom_left, top_left, top_right, bottom_right]
+            let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [bottom_left[0], bottom_left[1], top_left[0], top_left[1], top_right[0], top_right[1], bottom_right[0], bottom_right[1]]);
+            let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [rect.x, rect.y + rect.height, rect.x, rect.y, rect.x + rect.width, rect.y, rect.x + rect.width, rect.y + rect.height]);
+            let M = cv.getPerspectiveTransform(srcTri, dstTri);
+
+
+            warp_size = new cv.Size(img_w, img_h)
+            let warped = new cv.Mat();
+            cv.warpPerspective(mat, warped, M, warp_size)
+
+
+            // final_image = mat
+            final_image = warped.roi(rect2);
+
+        }
+        cv.imshow('canvasOutput', final_image);
 
     }
 
 
-
-    // points_top = np.copy(hull5)
-    // points_bottom = np.empty((0, 2), dtype = int)
-
-    // points_bottom_ind = np.argmax(points_top[:, 1], axis = 0)
-    // points_bottom = np.vstack((points_bottom, points_top[points_bottom_ind]))
-    // points_top = np.delete(points_top, points_bottom_ind, 0)
-
-    // points_bottom_ind = np.argmax(points_top[:, 1], axis = 0)
-    // points_bottom = np.vstack((points_bottom, points_top[points_bottom_ind]))
-    // points_top = np.delete(points_top, points_bottom_ind, 0)
-
-
-    /* let green = new cv.Scalar(0, 255, 0);
-        let contourID0 = 10;
-        cv.drawContours(cv_src, contours, contourID0, green, 1, cv.LINE_8, hierarchy, 100)
-        
-        for (let i = 0; i < contours.size(); ++i) {
-          let color = new cv.Scalar(Math.round(Math.random() * 255), Math.round(Math.random() * 255),
-                                    Math.round(Math.random() * 255));
-          cv.drawContours(cv_src, contours, i, color, 3, cv.LINE_8, hierarchy, 100);
-          } */
-
-    // cv.imshow('canvasOutput', mat);
-
-
-
-    // console.log(lines.data32S[4])
-    // console.log(lines.data32S.length)
-
-
-
-
-
-    // cv.imshow('canvasOutput', thresh);
-
-    // mat_gray_resized_blur_thresh.delete()
 };
 
 
@@ -362,7 +415,22 @@ function point_intersection(droite1, droite2) {
         return 'NA'
 }
 
+function lines_intersection_angle(droite1, droite2) {
+    if (droite1 == 'NA')
+        droite1 = [1000000000, null]
 
+    if (droite2 == 'NA')
+        droite2 = [1000000000, null]
+
+    angle = Math.PI - Math.abs(Math.atan(droite1[0]) - Math.atan(droite2[0]))
+    angle = radians_to_degrees(angle)
+    return angle
+}
+
+function radians_to_degrees(radians) {
+    var pi = Math.PI;
+    return radians * (180 / pi);
+}
 
 function getMaxOfArray(numArray) {
     return Math.max.apply(null, numArray);

@@ -152,6 +152,7 @@ def draw_contour(args_image):
     # filtered_line.shape = (:, 4)
     filtered_line = filter(lambda x: is_line_outside_margin(x, margin, img_dim), lines)
     filtered_line = np.asarray(list(filtered_line))
+    # print("filtered_line", filtered_line)
 
     # If all lines have been filtered, return original image
     if filtered_line.shape[0] == 0:
@@ -161,8 +162,11 @@ def draw_contour(args_image):
     hough = np.reshape(filtered_line, (-1, 2))
     hull = np.squeeze(cv2.convexHull(hough))
 
+    print("hull", hull)
+
     # rect_contour.shape = (:, 2)
     rect_contour = np.squeeze(simplify_contour(hull))
+    print("rect_contour", rect_contour)
     # cv2.drawContours(image, [rect_contour], -1, (0, 255, 255), 4, cv2.LINE_4)
 
     # On calcule la longueur de chaque segment
@@ -183,7 +187,7 @@ def draw_contour(args_image):
         max_coords = np.vstack((max_coords, line))
         del list3[index]
 
-    # print(max_coords)
+    print(max_coords)
 
     intersections = np.empty((0, 2), dtype=int)
     for i in range(len(max_coords)):
@@ -221,6 +225,8 @@ def draw_contour(args_image):
                 if x_int >= 0 and y_int >= 0 and x_int <= img_dim[1] and y_int <= img_dim[0]:
                     # cv2.circle(image, (int(x_int), int(y_int)), 5, (255, 255, 255), 3)
                     intersections = np.vstack((intersections, np.array([int(x_int), int(y_int)])))
+
+    print(intersections)
 
     if intersections.shape[0] != 4:
         x, y, w, h = cv2.boundingRect(rect_contour)
@@ -260,8 +266,12 @@ def draw_contour(args_image):
         x, y, w, h = cv2.boundingRect(hull5)
         coords_dest = np.array([(x, y + h), (x, y), (x + w, y), (x + w, y + h)])
 
+        print("angle_top_left", angle_top_left)
+        print("angle_top_right", angle_top_right)
+        print("angle_bottom_right", angle_bottom_right)
+        print("angle_bottom_left", angle_bottom_left)
+
         if (abs(angle_top_left - angle_top_right) >= 30 or abs(angle_bottom_right - angle_bottom_left) >= 30):
-            x, y, w, h = cv2.boundingRect(hull5)
             # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
             return image[y:y+h, x:x+w]
 
@@ -278,11 +288,11 @@ def draw_contour(args_image):
 folder_src = "./Images/Images_src"
 folder_dest = "./Images/Images_res"
 
-for image in os.listdir(folder_src):
-    img_drawn = draw_contour(os.path.join(folder_src, image))
-    cv2.imwrite(os.path.join(folder_dest, image), img_drawn)
+# for image in os.listdir(folder_src):
+#     img_drawn = draw_contour(os.path.join(folder_src, image))
+#     cv2.imwrite(os.path.join(folder_dest, image), img_drawn)
 
-# img_drawn = draw_contour("./Images/image9.jpg")
+img_drawn = draw_contour("./Images/Images_src/Mario_kart.jpg")
 # cv2.imshow("img_drawn", img_drawn)
 # cv2.waitKey(0)
-# cv2.imwrite(os.path.join(folder, "CONT_" + image), img_drawn)
+cv2.imwrite(os.path.join("./Images", "CONT.jpg"), img_drawn)
